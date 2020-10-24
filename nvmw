@@ -1,0 +1,64 @@
+#!/bin/bash
+
+while [ -n "$1" ]; do
+  case $1 in
+  "get")
+    GET=$1
+    shift
+    ;;
+  "rm")
+    REMOVE=$1
+    shift
+    ;;
+  "npm" | "node")
+    EXEC=$1
+    shift
+    ;;
+  "debug")
+    DEBUG=$1
+    ARGS+=" $1"
+    shift
+    ;;
+  "--proxy" | "-x")
+    PROXY=$1
+    shift
+    URL=$1
+    shift
+    ;;
+  *)
+    ARGS+=" $1"
+    shift
+    ;;
+  esac
+done
+
+if [ -n "$PROXY" ] && [ -n "$URL" ]; then
+  export NVM_NODEJS_ORG_MIRROR=$URL
+fi
+
+export NVM_DIR="$(pwd)/.nvm/wrapper"
+chmod +x $NVM_DIR/nvm-exec
+
+. $NVM_DIR/nvm.sh
+
+if [ -n "$REMOVE" ]; then
+  rm -rf $NVM_DIR/.cache $NVM_DIR/alias $NVM_DIR/versions
+elif [ -n "$DEBUG" ]; then
+  unset NVM_NODEJS_ORG_MIRROR
+  unset NVM_IOJS_ORG_MIRROR
+  nvm $ARGS
+elif [ -n "$GET" ]; then
+  if [ -n "$ARGS" ]; then
+    nvm install $ARGS
+  else
+    nvm install --lts
+  fi
+elif [ -n "$EXEC" ]; then
+  if [ -n "$ARGS" ]; then
+    nvm exec $(nvm current) $EXEC $ARGS
+  fi
+elif [ -n "$ARGS" ]; then
+  nvm $ARGS
+else
+  echo "No command arguments passed. Use 'nvmw -h' to see available nvm commands."
+fi
